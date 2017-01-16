@@ -1,0 +1,21 @@
+#!/bin/bash
+
+bash /usr/local/taiga/configure
+
+cd /usr/local/taiga/taiga-back/
+
+python manage.py collectstatic --noinput
+
+echo "Waiting for Postgresql to be available..."
+while ! tcping -t 1 ${POSTGRES_HOST} ${POSTGRES_PORT}; do
+  sleep 1
+done
+
+python manage.py migrate --noinput
+python manage.py loaddata initial_user
+python manage.py loaddata initial_project_templates
+python manage.py loaddata initial_role
+
+chown -R taiga /usr/local/taiga/media /usr/local/taiga/static /usr/local/taiga/logs
+
+/usr/local/bin/circusd /usr/local/taiga/circus.ini
